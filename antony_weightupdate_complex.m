@@ -20,7 +20,7 @@
 %% load data and basic variables
 clear;
 clc;
-addpath('Data')
+addpath('Data') 
 load empirical_paris.mat
 BOLD= TS{1};
 
@@ -242,8 +242,8 @@ nn=0;
          % for sum Cij*xj 
         
         % phase_z = angle(z(:,1)+1i*z(:,2));
-        phase_z =angle(z);
-        phase_diff = phase_z - phase_z';
+        % phase_z =angle(z);
+        % phase_diff = phase_z - phase_z';
         wC_complex = wC.*exp(1i*phase_diff);
         % wC_real = real(wC_complex);
         % wC_imag = imag(wC_complex);
@@ -273,7 +273,7 @@ nn=0;
         % end
         %Wmax =  max(max(W))
         W= W+dW;
-        % phase_diff=angle(W);
+        phase_diff=angle(W);
         wCD = (wC + W);
         Wc= wCD/max(max(wCD));
         %wC= 0.001*wCD;
