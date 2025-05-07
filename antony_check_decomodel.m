@@ -18,7 +18,7 @@
 %Ane López-González 14/07/2021
 
 %% load data and basic variables
-
+addpath('Data')
 load empirical_paris.mat
 BOLD= TS{1};
 
@@ -265,7 +265,7 @@ nn=0;
         %Wmax =  max(max(W))
         W= W+dW;
         wCD = (wC + W);
-        Wc= wCD/max(max(wCD));
+        % Wc= wCD/max(max(wCD));
         %wC= 0.001*wCD;
 
         
