@@ -20,7 +20,7 @@
 %% load data and basic variables
 clear;
 clc;
-
+addpath('Data')
 load empirical_paris.mat
 BOLD= TS{1};
 
@@ -188,7 +188,9 @@ end
 
 
 %f_diff  previously computed frequency with maximal power (of narrowly filtered data) by area
-omega = repmat(2*pi*f_diff',1,2); %angular velocity
+% omega = repmat(2*pi*f_diff',1,2); %angular velocity
+omega = 2*pi*f_diff'; %angular velocity
+
 omega(:,1) = -omega(:,1);
 
 
@@ -200,7 +202,8 @@ dsig = sqrt(dt)*sig;
 mu= 0.005;
 
 
-a = repmat(mu.*ones(nNodes,1),1,2);
+% a = repmat(mu.*ones(nNodes,1),1,2);
+a = mu.*ones(nNodes,1);
 a1 = a; %Starting values of a set to ~0
 trackminm1 = zeros(Cfg.opt_a.nIters, nWeights); %for tracking the minimization (good for debugging)
 
@@ -224,32 +227,36 @@ xs=zeros(Tmax*nSubs,nNodes);
 ys=zeros(Tmax*nSubs,nNodes);
 
 gamma = 0.01; %?? what to set
-z = 0.1*ones(nNodes,2); % --> x = z(:,1), y = z(:,2)
+z = (0.1+0.1i)*ones(nNodes,1); % --> x = z(:,1), y = z(:,2)
 W= 0.01*ones(size(wC));
+phase_diff = 0.1*ones(size(wC));
 nn=0;
  
-    for t=1:dt:3000 %This part is to initialize the model and to warm the timeseries
-        suma = wC*z - sumC.*z; % sum(Cij*xi) - sum(Cij)*xj
-        zz = z(:,end:-1:1); % flipped z, because (x.*x + y.*y)
-        z = z + dt*(a.*z + zz.*omega - z.*(z.*z+zz.*zz) + suma) + dsig*randn(nNodes,2);
-    end
+    % for t=1:dt:3000 %This part is to initialize the model and to warm the timeseries
+    %     suma = wC*z - sumC.*z; % sum(Cij*xi) - sum(Cij)*xj
+    %     zz = z(:,end:-1:1); % flipped z, because (x.*x + y.*y)
+    %     z = z + dt*(a.*z + zz.*omega - z.*(z.*z+zz.*zz) + suma) + dsig*randn(nNodes,2);
+    % end
 
-    for t=1:dt:400 %Tmax*Cfg.TRsec*nSubs %check for the specific data
+    for t=1:dt:Tmax*Cfg.TRsec*nSubs %check for the specific data
          % for sum Cij*xj 
         
-        phase_z = angle(z(:,1)+1i*z(:,2));
-        phase_diff = phase - phase';
-        wC_complex = wC*exp(1i*phase_diff);
-        wC_real = real(wC_complex);
-        wC_imag = imag(wC_complex);
-        sumC_real = repmat(sum(wC_real,2),1,2);
-        sumC_imag = repmat(sum(wC_imag,2),1,2);
-        sumC = repmat(sum(wC,2),1,2); 
-        suma = wC*z - sumC.*z; % sum(Cij*xi) - sum(Cij)*xj
+        % phase_z = angle(z(:,1)+1i*z(:,2));
+        phase_z =angle(z);
+        phase_diff = phase_z - phase_z';
+        wC_complex = wC.*exp(1i*phase_diff);
+        % wC_real = real(wC_complex);
+        % wC_imag = imag(wC_complex);
+        % sumC_real = repmat(sum(wC_real,2),1,2);
+        % sumC_imag = repmat(sum(wC_imag,2),1,2);
+        % sumC = repmat(sum(wC_complex,2),1,2); 
+        sumC = sum(wC_complex,2);
+
+        suma = wC_complex*z - sumC.*z; % sum(Cij*xi) - sum(Cij)*xj
         % suma_real = wC_real*z(:,1) - sumC_real.*z(:,1); % sum(Cij*xi) - sum(Cij)*xj
         % suma_imag = wC_imag*z(:,2) - sumC_real.*z(:,2); % sum(Cij*xi) - sum(Cij)*xj
-        zz = z(:,end:-1:1); % flipped z, because (x.*x + y.*y)
-        z = z + dt*(a.*z + zz.*omega - z.*(z.*z+zz.*zz) + suma) + dsig*randn(nNodes,2);
+        % zz = z(:,end:-1:1); % flipped z, because (x.*x + y.*y)
+        z = z + dt*(a.*z + z*1i.*omega - z.*abs(z).^2 + suma) + dsig*randn(nNodes,1)*(1+1i);
         % z = z + dt*(a.*z + zz.*omega - z.*(z.*z+zz.*zz) + [suma_real,suma_imag]) + dsig*randn(nNodes,2);
 
 
@@ -258,19 +265,25 @@ nn=0;
         %     fprintf("Time is %d\n",t)
         %     break
         % end
-        dW = (dt*(-0.01*W+.005*z*z'))*wC_mask;
+        dW = (dt*(-0.01*W+.005*real(z)*real(z)'))*wC_mask;
+        
         % W=(W+abs(dW))/max(max(W));
          %else
         %W = clip((W+dW),0.001,0.005);
         % end
         %Wmax =  max(max(W))
         W= W+dW;
+        % phase_diff=angle(W);
         wCD = (wC + W);
         Wc= wCD/max(max(wCD));
         %wC= 0.001*wCD;
 
         
-        
+         if mod(t,2)==0
+            nn=nn+1;
+            xs(nn,:)=real(z)'; 
+            ys(nn,:)=z(:,1)'; %%%will be used for hidden layer .....
+        end
         
         
 
@@ -281,7 +294,7 @@ nn=0;
     fitting(idx_g)=cc(2); %Fitting of the FC
 end
 
-optimal_wG
+wG_optimal = wG(find(fitting==max(fitting)));
     
     % fprintf(1, 'COMPUTING MODEL FIT.\n');
     % FC_simul(:, :, idx_g) = corrcoef(xs(1:nn,:)); 
