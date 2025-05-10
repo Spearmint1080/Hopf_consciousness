@@ -228,8 +228,9 @@ ys=zeros(Tmax*nSubs,nNodes);
 
 gamma = 0.01; %?? what to set
 z = (0.1+0.1i)*ones(nNodes,1); % --> x = z(:,1), y = z(:,2)
-W= 0.01*ones(size(wC));
+W= 0.01*ones(size(wC)).*wC_mask*exp(0.1i);
 phase_diff = 0.1*ones(size(wC));
+wC_complex=wC+W;
 nn=0;
  
     % for t=1:dt:3000 %This part is to initialize the model and to warm the timeseries
@@ -244,7 +245,7 @@ nn=0;
         % phase_z = angle(z(:,1)+1i*z(:,2));
         % phase_z =angle(z);
         % phase_diff = phase_z - phase_z';
-        wC_complex = wC.*exp(1i*phase_diff);
+        % wC_complex = wC.*exp(1i*phase_diff);
         % wC_real = real(wC_complex);
         % wC_imag = imag(wC_complex);
         % sumC_real = repmat(sum(wC_real,2),1,2);
@@ -265,7 +266,7 @@ nn=0;
         %     fprintf("Time is %d\n",t)
         %     break
         % end
-        dW = (dt*(-0.01*W+.005*real(z)*real(z)'))*wC_mask;
+        dW = (dt*(-0.01*W+.005*z*z')).*wC_mask;
         
         % W=(W+abs(dW))/max(max(W));
          %else
@@ -273,10 +274,11 @@ nn=0;
         % end
         %Wmax =  max(max(W))
         W= W+dW;
-        phase_diff=angle(W);
+        % phase_diff=angle(W);
         wCD = (wC + W);
-        Wc= wCD/max(max(wCD));
-        %wC= 0.001*wCD;
+        wC_complex= wCD/max(max(abs(wCD)));
+        % wC_complex= wCD/max(max(abs(wCD)));
+        % %wC= 0.001*wCD;
 
         
          if mod(t,2)==0
